@@ -1,0 +1,83 @@
+# Airforce Strike
+
+เกมยิงเครื่องบินแนวตั้ง (สไตล์ 1942 / Raiden) — HTML5 Canvas + vanilla JS + Vite
+ไม่มีไฟล์ภาพ/เสียงภายนอก: กราฟิกวาดด้วย Canvas API, เสียงสังเคราะห์ด้วย Web Audio API
+
+## เล่นทันที
+ดับเบิลคลิก **`play.bat`** — เปิดเกมในหน้าต่าง Edge (ไม่มีแถบเบราว์เซอร์) ไม่ต้องรันเซิร์ฟเวอร์
+- ครั้งแรกถ้ายังไม่มี `dist/index.html` จะ build ให้อัตโนมัติ (ต้องมี Node.js)
+- แก้โค้ดใน `src/` แล้ว → ดับเบิลคลิก **`build.bat`** (build ใหม่ + เปิดเกม)
+- build ออกมาเป็น `dist/index.html` ไฟล์เดียว (JS ฝังในไฟล์) จะ copy ไปเล่นเครื่องอื่นก็ได้ ดับเบิลคลิกเปิดได้เลย
+
+## รัน (สำหรับพัฒนา)
+```bash
+npm install
+npm run dev      # เปิด http://localhost:5173
+npm run build    # build ลง dist/
+```
+
+## ปุ่มควบคุม
+| ปุ่ม | การทำงาน |
+|---|---|
+| WASD / ลูกศร | บิน 8 ทิศ |
+| Space (กดค้าง) | ยิง |
+| B | ระเบิดพิเศษ (ล้างกระสุนศัตรูทั้งจอ) |
+| P / Esc | หยุดชั่วคราว (Q = กลับหน้าแรก) |
+| M | เปิด/ปิดเสียง |
+| มือถือ | ลากนิ้วเพื่อบิน, ยิงอัตโนมัติ, ปุ่ม BOMB / pause บนจอ |
+
+## ระบบเกม
+- **ผู้เล่น:** 3 ชีวิต + HP bar, อมตะ 2 วินาทีหลังโดนยิง (กระพริบ), ตายแล้วปืนลด 1 ระดับ
+- **ระดับปืน (P):** 1 ยิงเดี่ยว → 2 คู่ → 3 กระจาย 3 ทาง → 4 กระจาย 5 ทาง → 5 = 5 ทาง + missile ติดตามเป้า
+- **คะแนน:** combo multiplier สูงสุด x8 เมื่อยิงศัตรูต่อเนื่อง (ขาดช่วงเกิน 1.6 วินาทีหรือโดนยิงแล้วรีเซ็ต), high score เก็บใน localStorage, โบนัสจบด่าน
+
+### ศัตรู
+| ชนิด | พฤติกรรม |
+|---|---|
+| Fighter | บินตรงลงมา ยิงกระสุนตรง |
+| Zigzag | บินส่ายเป็น sine wave ยิงเล็งผู้เล่น |
+| Bomber | ตัวใหญ่ ช้า HP เยอะ ยิงกระสุนกระจายรูปพัด |
+| Kamikaze | บินลงมาล็อคเป้า แล้วพุ่งชนผู้เล่น |
+
+### ไอเทม (ดรอปจากศัตรู)
+| ไอเทม | ผล |
+|---|---|
+| **P** | อัปเกรดปืน (ถ้าเต็มแล้วได้ +1000 คะแนน) |
+| **S** | โล่กันได้ 1 ครั้ง |
+| **B** | ระเบิดพิเศษ +1 |
+| **H** | ฟื้น HP +35 |
+
+### ด่านและบอส
+| ด่าน | ธีม | บอส |
+|---|---|---|
+| 1 Pacific Dawn | ทะเลเขตร้อน | Sky Fortress |
+| 2 Sunset Strait | พระอาทิตย์ตก | Storm Raven |
+| 3 Midnight Armada | กลางคืน | Crimson Leviathan |
+| 4 Arctic Tempest | ขั้วโลก พายุหิมะ | Thunder Colossus |
+
+บอสมี 3 phase ตาม HP ที่เหลือ: **spread** (กระสุนกระจาย) → **spiral** (เกลียว) → **aimed** (ยิงชุดเล็งจากป้อมปืน + วงแหวนกระสุน)
+
+**Thunder Colossus** (บอสด่าน 4) มีท่าเพิ่ม: phase 1 ปล่อย**ม่านกระสุน**เต็มแถวที่มีช่องให้ลอดใกล้ตัวผู้เล่น ·
+phase 2 เกลียว 4 แขน · phase 3 เรียก **kamikaze คุ้มกัน**จากปลายปีกทุก 6 วินาที (ค่าปรับได้ที่ `CONFIG.boss.curtain` / `escorts`)
+
+ด่านถัดไป ศัตรู HP / อัตรายิง / ความเร็วกระสุน เพิ่มขึ้น · หลังบอสตาย ไอเทมที่ดรอปจะพุ่งเข้าหาผู้เล่นอัตโนมัติ
+
+## โครงสร้าง
+```
+play.bat           ดับเบิลคลิกเล่นเกม (build ให้ถ้ายังไม่มี dist/)
+build.bat          build ใหม่หลังแก้โค้ด แล้วเปิดเกม
+vite.config.js     ปลั๊กอินฝัง JS ลง dist/index.html ไฟล์เดียว (เปิดผ่าน file:// ได้)
+src/
+  config.js        ค่าบาลานซ์ทั้งหมด (ความเร็ว, HP, damage, fire rate, ...)
+  levels.js        4 ด่าน: ธีม, ความยาก, timeline ของ wave, บอส
+  main.js          bootstrap
+  core/            loop (fixed timestep), input, screen (scaling), pool, audio, storage
+  game/            game (state machine), world (กฎเกม), waves, collision, score
+  entities/        player, enemy, boss, bullet, powerup, particle (effects)
+  render/          renderer, sprites (วาดทุกอย่าง), background (parallax)
+  ui/              hud, screens
+```
+
+ปรับบาลานซ์ที่ `src/config.js` และเพิ่ม/แก้ wave ที่ `src/levels.js` (ดูคำอธิบาย formation ที่หัวไฟล์)
+
+**ทดสอบด่านที่ต้องการ:** เปิด console (F12) แล้วพิมพ์ `__game.newGame(); __game.startStage(3)` (เลขด่านเริ่มที่ 0 → 3 = ด่าน 4)
