@@ -14,6 +14,7 @@ export class Score {
     this.comboTimer = 0;
     this.bestCombo = 0;
     this.newHighScore = false;
+    this.cheated = false; // เคยเปิด God Mode ในเกมนี้ → ไม่นับ high score
   }
 
   get multiplier() {
@@ -33,7 +34,7 @@ export class Score {
 
   add(points) {
     this.score += points;
-    if (this.score > this.highScore) {
+    if (!this.cheated && this.score > this.highScore) {
       this.highScore = this.score;
       this.newHighScore = true;
     }
@@ -52,6 +53,6 @@ export class Score {
   }
 
   commit() {
-    if (this.newHighScore) saveHighScore(this.highScore);
+    if (this.newHighScore && !this.cheated) saveHighScore(this.highScore);
   }
 }

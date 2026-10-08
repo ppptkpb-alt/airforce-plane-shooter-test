@@ -39,6 +39,7 @@ export class Game {
     this.phaseTimer = 0;
     this.summary = null;
     this.ending = null;
+    this.god = false; // God Mode สำหรับทดสอบด่าน (กด ` เพื่อเปิด)
 
     input.onGesture(() => this.audio.unlock());
     // สลับแท็บ/หน้าต่าง → หยุดเกมอัตโนมัติ
@@ -68,9 +69,10 @@ export class Game {
 
   // ---------------------------------------------------------------- flow
 
-  newGame() {
+  newGame(stageIndex = 0) {
     this.world.newGame();
-    this.startStage(0);
+    this.world.score.cheated = this.god;
+    this.startStage(stageIndex);
     this.audio.play('select');
   }
 
@@ -132,6 +134,7 @@ export class Game {
     this.stateTime += dt;
     this.background.update(dt);
     if (input.pressed('mute')) this.audio.toggleMute();
+    this.updateGod();
 
     switch (this.state) {
       case 'title':
@@ -234,6 +237,63 @@ export class Game {
     if (w.gameOver) this.gameOver();
   }
 
+  // ---------------------------------------------------------------- god mode
+
+  updateGod() {
+    const input = this.input;
+    const w = this.world;
+    if (input.pressed('god')) {
+      this.god = !this.god;
+      w.godInvincible = this.god;
+      if (this.god) w.score.cheated = true;
+      this.audio.play('select');
+    }
+    if (!this.god) return;
+
+    if (input.pressed('godInvincible')) w.godInvincible = !w.godInvincible;
+
+    // วาร์ปไปด่าน 1–4
+    if (['title', 'playing', 'paused'].includes(this.state)) {
+      for (let i = 0; i < STAGES.length; i++) {
+        if (!input.pressed(`stage${i + 1}`)) continue;
+        if (this.state === 'title') this.newGame(i);
+        else this.startStage(i);
+        return;
+      }
+    }
+
+    if (this.state !== 'playing') return;
+    const p = w.player;
+
+    if (input.pressed('godPower')) {
+      p.weaponLevel = CONFIG.weapons.maxLevel;
+      p.bombs = CONFIG.player.maxBombs;
+      w.fx.floatText(p.x, p.y - 30, 'MAX POWER', '#ffb347');
+    }
+
+    if (input.pressed('godBoss') && (this.stagePhase === 'intro' || this.stagePhase === 'waves')) {
+      this.waves.index = this.waves.events.length;
+      w.enemies.length = 0;
+      w.enemyBullets.clear();
+      this.stagePhase = 'warning';
+      this.phaseTimer = SC.bossWarningTime;
+      this.audio.play('bossAlarm');
+    }
+
+    // ลด HP บอสลงต่ำกว่าเกณฑ์ phase ถัดไปพอดี (phase สุดท้าย = ฆ่าทิ้ง)
+    if (input.pressed('godBossHit') && w.boss?.targetable) {
+      const b = w.boss;
+      const th = CONFIG.boss.phaseThresholds[b.phase];
+      const damage = th === undefined ? b.hp : Math.max(1, b.hp - (th * b.maxHp - 1));
+      w.damageBoss(damage, b.x, b.y);
+    }
+
+    // ข้ามด่าน (ยกเว้นช่วงบอสตายแล้ว ซึ่งจะผ่านด่านเองอยู่แล้ว)
+    if (input.pressed('godNext') && this.stagePhase !== 'bossDead') {
+      this.stageCleared();
+    }
+  }
+
   // ---------------------------------------------------------------- render
 
   render() {
@@ -247,6 +307,7 @@ export class Game {
       this.background.drawBack(ctx);
       this.background.drawFront(ctx);
       Screens.drawTitle(ctx, this.world.time, this.world.score.highScore, touch);
+      if (this.god) this.hud.drawGod(ctx, this.world, true);
       return;
     }
 
@@ -260,6 +321,7 @@ export class Game {
     this.renderer.drawWorld(this.world, this.background);
     this.hud.draw(ctx, this.world, this.stageIndex + 1, touch && this.state === 'playing');
     this.hud.drawBossBar(ctx, this.world.boss);
+    if (this.god) this.hud.drawGod(ctx, this.world, false);
 
     if (this.state === 'playing') {
       if (this.stagePhase === 'intro') {

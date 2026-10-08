@@ -30,6 +30,7 @@ export class World {
     this.totalKills = 0;
     this.respawnTimer = 0;
     this.damageFlash = 0;
+    this.godInvincible = false; // God Mode: ไม่รับดาเมจ
   }
 
   // เริ่มเกมใหม่ทั้งหมด
@@ -218,7 +219,7 @@ export class World {
 
   hurtPlayer(damage) {
     const p = this.player;
-    if (!p.alive || p.invulnerable) return;
+    if (!p.alive || p.invulnerable || this.godInvincible) return;
     this.score.breakCombo();
 
     // โล่รับได้ 1 ครั้ง

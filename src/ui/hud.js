@@ -107,6 +107,20 @@ export class Hud {
     if (touchMode) this.drawTouchButtons(ctx, p);
   }
 
+  // ป้าย God Mode + ปุ่มลัด
+  drawGod(ctx, world, onTitle) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(60,0,20,0.6)';
+    ctx.fillRect(0, H - 96, W, 22);
+    ctx.restore();
+    text(ctx, 'GOD MODE', 12, 70, 11, '#ff5a8a');
+    text(ctx, `INV ${world.godInvincible ? 'ON' : 'OFF'}`, 82, 70, 11, world.godInvincible ? '#7dffa0' : '#ff9a9a');
+    const help = onTitle
+      ? '` ปิดโหมด · 1-4 เริ่มที่ด่านนั้น'
+      : 'I อมตะ · N ข้ามด่าน · K บอส · J ตีบอส · U ปืนเต็ม · 1-4 ด่าน';
+    text(ctx, help, W / 2, H - 85, 11, '#ffd0dc', 'center', '600');
+  }
+
   drawBossBar(ctx, boss) {
     if (!boss || !boss.showBar) return;
     const x = 60;

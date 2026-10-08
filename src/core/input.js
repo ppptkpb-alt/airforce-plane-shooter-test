@@ -13,6 +13,17 @@ const BINDINGS = {
   skip: ['Enter'], // หน้าสรุป/คัตซีน — ไม่รวม Space เพราะผู้เล่นมักกดยิงค้างอยู่
   mute: ['KeyM'],
   quit: ['KeyQ'],
+  // God Mode (ทดสอบด่าน) — ปุ่มอื่นนอกจาก god ทำงานเฉพาะตอนเปิดโหมดแล้ว
+  god: ['Backquote'],
+  godInvincible: ['KeyI'],
+  godNext: ['KeyN'],
+  godBoss: ['KeyK'],
+  godBossHit: ['KeyJ'],
+  godPower: ['KeyU'],
+  stage1: ['Digit1'],
+  stage2: ['Digit2'],
+  stage3: ['Digit3'],
+  stage4: ['Digit4'],
 };
 
 const CODE_TO_ACTIONS = new Map();
