@@ -116,7 +116,7 @@ export class Hud {
     text(ctx, 'GOD MODE', 12, 70, 11, '#ff5a8a');
     text(ctx, `INV ${world.godInvincible ? 'ON' : 'OFF'}`, 82, 70, 11, world.godInvincible ? '#7dffa0' : '#ff9a9a');
     const help = onTitle
-      ? '` ปิดโหมด · 1-4 เริ่มที่ด่านนั้น'
+      ? 'F2 ปิดโหมด · 1-4 เริ่มที่ด่านนั้น'
       : 'I อมตะ · N ข้ามด่าน · K บอส · J ตีบอส · U ปืนเต็ม · 1-4 ด่าน';
     text(ctx, help, W / 2, H - 85, 11, '#ffd0dc', 'center', '600');
   }

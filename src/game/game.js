@@ -39,7 +39,7 @@ export class Game {
     this.phaseTimer = 0;
     this.summary = null;
     this.ending = null;
-    this.god = false; // God Mode สำหรับทดสอบด่าน (กด ` เพื่อเปิด)
+    this.god = false; // God Mode สำหรับทดสอบด่าน (กด F2 เพื่อเปิด)
 
     input.onGesture(() => this.audio.unlock());
     // สลับแท็บ/หน้าต่าง → หยุดเกมอัตโนมัติ

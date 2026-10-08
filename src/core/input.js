@@ -14,7 +14,7 @@ const BINDINGS = {
   mute: ['KeyM'],
   quit: ['KeyQ'],
   // God Mode (ทดสอบด่าน) — ปุ่มอื่นนอกจาก god ทำงานเฉพาะตอนเปิดโหมดแล้ว
-  god: ['Backquote'],
+  god: ['F2', 'Backquote'], // ` มักถูก Windows ใช้เป็นปุ่มสลับภาษาไทย/อังกฤษ → F2 เป็นปุ่มหลัก
   godInvincible: ['KeyI'],
   godNext: ['KeyN'],
   godBoss: ['KeyK'],
