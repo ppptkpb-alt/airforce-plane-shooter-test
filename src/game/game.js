@@ -15,10 +15,13 @@ const VICTORY_INPUT_LOCK = 2;
 const ENDING_SKIP_LOCK = 2;
 const TITLE_INPUT_LOCK = 0.5; // กันกดต่อเนื่องจากจอสรุปแล้วเข้าเกมใหม่ทันที
 const STAGE_CLEAR_BONUS = 5000;
+const CONTINUE_TIME = 10; // นับถอยหลัง 9 → 0
+const CONTINUE_INPUT_LOCK = 1;
+const BOSS_PHASES = ['warning', 'boss', 'bossDead'];
 
 // state machine หลัก:
 //   title → playing ⇄ paused → stageClear → playing (ด่านถัดไป) … → ending (คัตซีน) → victory → title
-//                           ↘ gameOver → title
+//                           ↘ continue (นับถอยหลัง) → playing (ด่านเดิม/เริ่มที่บอส) | gameOver → title
 // หน้าสรุป/คัตซีนข้ามได้ด้วย Enter หรือแตะจอเท่านั้น (Space = ยิง จึงไม่นับ)
 // ภายใน playing มี stagePhase: intro → waves → warning → boss → bossDead
 export class Game {
@@ -40,6 +43,10 @@ export class Game {
     this.summary = null;
     this.ending = null;
     this.god = false; // God Mode สำหรับทดสอบด่าน (กด F2 เพื่อเปิด)
+    this.continues = 0;
+    this.deathPhase = null;
+    this.bossCheckpoint = false; // จบ intro แล้วข้ามไปบอสเลย (continue ตอนตายที่บอส)
+    this.lastTick = 0;
 
     input.onGesture(() => this.audio.unlock());
     // สลับแท็บ/หน้าต่าง → หยุดเกมอัตโนมัติ
@@ -72,6 +79,7 @@ export class Game {
   newGame(stageIndex = 0) {
     this.world.newGame();
     this.world.score.cheated = this.god;
+    this.continues = 0;
     this.startStage(stageIndex);
     this.audio.play('select');
   }
@@ -86,7 +94,19 @@ export class Game {
     this.waves.start(stage);
     this.stagePhase = 'intro';
     this.phaseTimer = SC.introTime;
+    this.bossCheckpoint = false;
     this.setState('playing');
+  }
+
+  // ข้าม wave ที่เหลือ → WARNING → บอส
+  skipToBoss() {
+    const w = this.world;
+    this.waves.index = this.waves.events.length;
+    w.enemies.length = 0;
+    w.enemyBullets.clear();
+    this.stagePhase = 'warning';
+    this.phaseTimer = SC.bossWarningTime;
+    this.audio.play('bossAlarm');
   }
 
   stageCleared() {
@@ -103,6 +123,7 @@ export class Game {
       totalKills: w.totalKills,
       highScore: w.score.highScore,
       newHighScore: w.score.newHighScore,
+      continues: this.continues,
     };
     if (this.stageIndex + 1 >= STAGES.length) {
       const p = w.player;
@@ -114,6 +135,7 @@ export class Game {
     }
   }
 
+  // หมดชีวิต → ถามว่าจะ continue ไหม (คะแนนรอบนี้บันทึกไว้ก่อน)
   gameOver() {
     const w = this.world;
     w.score.commit();
@@ -123,8 +145,34 @@ export class Game {
       highScore: w.score.highScore,
       newHighScore: w.score.newHighScore,
     };
+    this.deathPhase = this.stagePhase;
+    this.lastTick = CONTINUE_TIME;
+    this.setState('continue');
+  }
+
+  // เล่นต่อที่ด่านเดิม: ชีวิตเต็ม คะแนนเริ่มใหม่ ถ้าตายที่บอสจะเริ่มที่บอสเลย
+  continueGame() {
+    const w = this.world;
+    const p = w.player;
+    const weapon = p.weaponLevel;
+    p.newGame();
+    p.weaponLevel = Math.max(2, weapon);
+    const cheated = w.score.cheated;
+    w.score.reset();
+    w.score.cheated = cheated;
+    this.continues++;
+    this.startStage(this.stageIndex);
+    this.bossCheckpoint = BOSS_PHASES.includes(this.deathPhase);
+    this.audio.play('select');
+  }
+
+  giveUp() {
     this.audio.play('gameOver');
     this.setState('gameOver');
+  }
+
+  get continueSecondsLeft() {
+    return Math.max(0, Math.ceil(CONTINUE_TIME - 1 - this.stateTime));
   }
 
   // ---------------------------------------------------------------- update
@@ -166,6 +214,18 @@ export class Game {
         if (this.stateTime > SCREEN_INPUT_LOCK && this.skipPressed()) this.startStage(this.stageIndex + 1);
         break;
 
+      case 'continue': {
+        this.world.fx.update(dt);
+        const left = this.continueSecondsLeft;
+        if (left < this.lastTick) {
+          this.lastTick = left;
+          this.audio.play('tick');
+        }
+        if (this.stateTime > CONTINUE_INPUT_LOCK && this.skipPressed()) this.continueGame();
+        else if (input.pressed('pause') || input.pressed('quit') || this.stateTime >= CONTINUE_TIME) this.giveUp();
+        break;
+      }
+
       case 'ending':
         this.ending.update(dt);
         this.background.speedMul = this.ending.backgroundSpeed();
@@ -199,7 +259,14 @@ export class Game {
     switch (this.stagePhase) {
       case 'intro':
         this.phaseTimer -= dt;
-        if (this.phaseTimer <= 0) this.stagePhase = 'waves';
+        if (this.phaseTimer <= 0) {
+          if (this.bossCheckpoint) {
+            this.bossCheckpoint = false;
+            this.skipToBoss();
+          } else {
+            this.stagePhase = 'waves';
+          }
+        }
         break;
 
       case 'waves':
@@ -271,14 +338,7 @@ export class Game {
       w.fx.floatText(p.x, p.y - 30, 'MAX POWER', '#ffb347');
     }
 
-    if (input.pressed('godBoss') && (this.stagePhase === 'intro' || this.stagePhase === 'waves')) {
-      this.waves.index = this.waves.events.length;
-      w.enemies.length = 0;
-      w.enemyBullets.clear();
-      this.stagePhase = 'warning';
-      this.phaseTimer = SC.bossWarningTime;
-      this.audio.play('bossAlarm');
-    }
+    if (input.pressed('godBoss') && (this.stagePhase === 'intro' || this.stagePhase === 'waves')) this.skipToBoss();
 
     // ลด HP บอสลงต่ำกว่าเกณฑ์ phase ถัดไปพอดี (phase สุดท้าย = ฆ่าทิ้ง)
     if (input.pressed('godBossHit') && w.boss?.targetable) {
@@ -319,7 +379,7 @@ export class Game {
     }
 
     this.renderer.drawWorld(this.world, this.background);
-    this.hud.draw(ctx, this.world, this.stageIndex + 1, touch && this.state === 'playing');
+    this.hud.draw(ctx, this.world, this.stageIndex + 1, touch && this.state === 'playing', this.continues);
     this.hud.drawBossBar(ctx, this.world.boss);
     if (this.god) this.hud.drawGod(ctx, this.world, false);
 
@@ -339,6 +399,13 @@ export class Game {
         break;
       case 'stageClear':
         Screens.drawStageClear(ctx, t, { ...this.summary, ready }, touch);
+        break;
+      case 'continue':
+        Screens.drawContinue(ctx, t, this.continueSecondsLeft, {
+          stage: this.stageIndex + 1,
+          atBoss: BOSS_PHASES.includes(this.deathPhase),
+          ready: this.stateTime > CONTINUE_INPUT_LOCK,
+        }, touch);
         break;
       case 'gameOver':
         Screens.drawGameOver(ctx, t, { ...this.summary, ready }, touch);

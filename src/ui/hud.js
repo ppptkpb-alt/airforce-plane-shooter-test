@@ -54,7 +54,7 @@ function bombIcon(ctx, x, y) {
 }
 
 export class Hud {
-  draw(ctx, world, stageNumber, touchMode) {
+  draw(ctx, world, stageNumber, touchMode, continues = 0) {
     const p = world.player;
     const s = world.score;
 
@@ -70,6 +70,7 @@ export class Hud {
     text(ctx, 'HI-SCORE', W / 2, 12, 10, '#ffcf6b', 'center');
     text(ctx, pad(s.highScore), W / 2, 27, 18, s.newHighScore ? '#ffcf6b' : '#ffe9b8', 'center');
     if (stageNumber) text(ctx, `STAGE ${stageNumber}`, W - 12, 12, 10, '#9fc6e8', 'right');
+    if (continues > 0) text(ctx, `CONTINUE x${continues}`, W - 12, 70, 10, '#ff9a9a', 'right');
 
     // HP
     const hpRatio = p.hp / CONFIG.player.maxHp;

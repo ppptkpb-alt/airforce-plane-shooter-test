@@ -69,6 +69,7 @@ export class Ending {
       { str: `ศัตรูที่ทำลายทั้งหมด  ${s.totalKills}`, size: 15, color: '#ffffff' },
       { str: `คะแนนสุดท้าย  ${pad(s.score)}`, size: 17, color: '#ffcf6b' },
     );
+    if (s.continues > 0) lines.push({ str: `CONTINUE ที่ใช้  ${s.continues}`, size: 13, color: '#ff9a9a' });
     return lines;
   }
 

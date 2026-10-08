@@ -162,6 +162,20 @@ export function drawStageClear(ctx, t, info, touch) {
   if (info.ready) continuePrompt(ctx, t, 530, touch ? 'แตะจอเพื่อไปด่านถัดไป' : 'กด ENTER เพื่อไปด่านถัดไป');
 }
 
+export function drawContinue(ctx, t, secondsLeft, info, touch) {
+  dim(ctx, 0.6);
+  bigTitle(ctx, 'CONTINUE?', 190, 50, '#ffffff', '#ff8a5a');
+  // ตัวเลขนับถอยหลัง เด้งขึ้นทุกวินาที
+  const scale = 1 + Math.max(0, 0.25 - (t % 1)) * 1.6;
+  bigTitle(ctx, String(secondsLeft), 300, 110 * scale, '#fff6c0', secondsLeft <= 3 ? '#ff5a5a' : '#ffcf6b');
+  text(ctx, `ด่าน ${info.stage} — ${info.atBoss ? 'เริ่มที่บอส' : 'เริ่มต้นด่าน'}`, W / 2, 400, 16, '#cfe6ff', 'center');
+  text(ctx, 'ชีวิตเต็ม · คะแนนเริ่มใหม่ที่ 0', W / 2, 428, 13, '#9fc6e8', 'center', '600');
+  if (info.ready) {
+    continuePrompt(ctx, t, 480, touch ? 'แตะจอเพื่อเล่นต่อ' : 'กด ENTER เพื่อเล่นต่อ');
+    if (!touch) text(ctx, 'ESC — ยอมแพ้', W / 2, 512, 13, '#cfe6ff', 'center', '600');
+  }
+}
+
 export function drawGameOver(ctx, t, info, touch) {
   dim(ctx, 0.65);
   bigTitle(ctx, 'GAME OVER', 210, 54, '#ffffff', '#ff5a5a');
@@ -186,6 +200,7 @@ export function drawVictory(ctx, t, info, touch) {
     ['คะแนนสุดท้าย', pad(info.score), '#ffffff'],
     ['HI-SCORE', pad(info.highScore), '#ffcf6b'],
   ], 340);
+  if (info.continues > 0) text(ctx, `CONTINUE ที่ใช้ ${info.continues} ครั้ง`, W / 2, 445, 12, '#ff9a9a', 'center', '600');
   if (info.newHighScore && blink(t, 4)) text(ctx, 'NEW HIGH SCORE!', W / 2, 490, 22, '#ffe36b', 'center');
   if (info.ready) continuePrompt(ctx, t, 545, touch ? 'แตะจอเพื่อกลับหน้าแรก' : 'กด ENTER เพื่อกลับหน้าแรก');
 }

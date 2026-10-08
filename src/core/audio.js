@@ -178,6 +178,10 @@ export class Audio {
     this.noiseBurst(t + 0.05, 0.35, 0.08, 'highpass', 6000, 3000);
   }
 
+  sfx_tick(t) {
+    this.tone(t, 'square', 990, 990, 0.06, 0.08);
+  }
+
   sfx_gameOver(t) {
     [392, 330, 262, 196].forEach((f, i) => this.tone(t + i * 0.25, 'triangle', f, f * 0.98, 0.35, 0.22));
   }
