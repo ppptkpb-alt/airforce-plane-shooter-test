@@ -9,7 +9,8 @@ const BINDINGS = {
   fire: ['Space'],
   bomb: ['KeyB'],
   pause: ['KeyP', 'Escape'],
-  confirm: ['Enter', 'Space'],
+  confirm: ['Enter', 'Space'], // ใช้เฉพาะหน้า title
+  skip: ['Enter'], // หน้าสรุป/คัตซีน — ไม่รวม Space เพราะผู้เล่นมักกดยิงค้างอยู่
   mute: ['KeyM'],
   quit: ['KeyQ'],
 };

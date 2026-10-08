@@ -20,7 +20,8 @@ npm run build    # build ลง dist/
 | ปุ่ม | การทำงาน |
 |---|---|
 | WASD / ลูกศร | บิน 8 ทิศ |
-| Space (กดค้าง) | ยิง |
+| Space (กดค้าง) | ยิง (และเริ่มเกมที่หน้าแรก) |
+| Enter | ไปต่อในหน้าสรุปด่าน / ข้ามฉากจบ (Space ไม่ข้าม กันกดยิงค้างแล้วข้ามโดยไม่ตั้งใจ) |
 | B | ระเบิดพิเศษ (ล้างกระสุนศัตรูทั้งจอ) |
 | P / Esc | หยุดชั่วคราว (Q = กลับหน้าแรก) |
 | M | เปิด/ปิดเสียง |
@@ -62,6 +63,11 @@ phase 2 เกลียว 4 แขน · phase 3 เรียก **kamikaze ค
 
 ด่านถัดไป ศัตรู HP / อัตรายิง / ความเร็วกระสุน เพิ่มขึ้น · หลังบอสตาย ไอเทมที่ดรอปจะพุ่งเข้าหาผู้เล่นอัตโนมัติ
 
+### ฉากจบ
+ปราบบอสด่าน 4 แล้วจะเข้าคัตซีนประมาณ 19 วินาที (`src/ui/ending.js`):
+ฝูงบินบินกลับฐาน → ท้องฟ้ารุ่งอรุณ + พลุ + เรื่องราว → เครดิตรายชื่อบอสที่ปราบได้ + **THE END** → จอ Mission Complete สรุปคะแนน
+กด Enter ข้ามได้หลัง 2 วินาที
+
 ## โครงสร้าง
 ```
 play.bat           ดับเบิลคลิกเล่นเกม (build ให้ถ้ายังไม่มี dist/)
@@ -75,7 +81,7 @@ src/
   game/            game (state machine), world (กฎเกม), waves, collision, score
   entities/        player, enemy, boss, bullet, powerup, particle (effects)
   render/          renderer, sprites (วาดทุกอย่าง), background (parallax)
-  ui/              hud, screens
+  ui/              hud, screens, ending (คัตซีนฉากจบ)
 ```
 
 ปรับบาลานซ์ที่ `src/config.js` และเพิ่ม/แก้ wave ที่ `src/levels.js` (ดูคำอธิบาย formation ที่หัวไฟล์)

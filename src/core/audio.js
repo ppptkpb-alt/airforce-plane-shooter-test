@@ -11,6 +11,7 @@ const THROTTLE = {
   explosion: 0.04,
   bigExplosion: 0.15,
   powerup: 0.05,
+  firework: 0.15,
 };
 
 export class Audio {
@@ -157,6 +158,24 @@ export class Audio {
     const notes = [523, 659, 784, 659, 784, 1047];
     notes.forEach((f, i) => this.tone(t + i * 0.12, 'triangle', f, f, 0.2, 0.2));
     this.tone(t + notes.length * 0.12, 'triangle', 1047, 1047, 0.6, 0.22);
+  }
+
+  // เพลงชัยชนะตอนเริ่มฉากจบ
+  sfx_fanfare(t) {
+    const notes = [392, 523, 659, 784, 659, 784];
+    const lens = [0.14, 0.14, 0.14, 0.32, 0.14, 0.14];
+    let at = t;
+    notes.forEach((f, i) => {
+      this.tone(at, 'triangle', f, f, lens[i] + 0.1, 0.2);
+      this.tone(at, 'square', f / 2, f / 2, lens[i] + 0.05, 0.05);
+      at += lens[i];
+    });
+    for (const f of [523, 659, 784, 1047]) this.tone(at, 'triangle', f, f, 1.2, 0.12);
+  }
+
+  sfx_firework(t) {
+    this.noiseBurst(t, 0.5, 0.3, 'lowpass', 2500, 200);
+    this.noiseBurst(t + 0.05, 0.35, 0.08, 'highpass', 6000, 3000);
   }
 
   sfx_gameOver(t) {

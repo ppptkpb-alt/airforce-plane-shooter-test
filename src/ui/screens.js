@@ -26,7 +26,7 @@ function panel(ctx, x, y, w, h) {
 }
 
 // หัวข้อใหญ่สีโลหะ
-function bigTitle(ctx, str, y, size, c0 = '#ffffff', c1 = '#8fb8de') {
+export function bigTitle(ctx, str, y, size, c0 = '#ffffff', c1 = '#8fb8de') {
   ctx.font = `900 ${size}px ${FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';

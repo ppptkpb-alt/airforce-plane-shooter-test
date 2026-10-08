@@ -7,14 +7,19 @@ import { Renderer } from '../render/renderer.js';
 import { Hud } from '../ui/hud.js';
 import * as Screens from '../ui/screens.js';
 import { Audio } from '../core/audio.js';
+import { Ending } from '../ui/ending.js';
 
 const SC = CONFIG.stage;
 const SCREEN_INPUT_LOCK = 0.8; // กันกดข้ามหน้าจอสรุปโดยไม่ตั้งใจ (เช่น ยังกด Space ค้าง)
+const VICTORY_INPUT_LOCK = 2;
+const ENDING_SKIP_LOCK = 2;
+const TITLE_INPUT_LOCK = 0.5; // กันกดต่อเนื่องจากจอสรุปแล้วเข้าเกมใหม่ทันที
 const STAGE_CLEAR_BONUS = 5000;
 
 // state machine หลัก:
-//   title → playing ⇄ paused → stageClear → playing (ด่านถัดไป) … → victory
+//   title → playing ⇄ paused → stageClear → playing (ด่านถัดไป) … → ending (คัตซีน) → victory → title
 //                           ↘ gameOver → title
+// หน้าสรุป/คัตซีนข้ามได้ด้วย Enter หรือแตะจอเท่านั้น (Space = ยิง จึงไม่นับ)
 // ภายใน playing มี stagePhase: intro → waves → warning → boss → bossDead
 export class Game {
   constructor(screen, input) {
@@ -33,6 +38,7 @@ export class Game {
     this.stagePhase = 'intro';
     this.phaseTimer = 0;
     this.summary = null;
+    this.ending = null;
 
     input.onGesture(() => this.audio.unlock());
     // สลับแท็บ/หน้าต่าง → หยุดเกมอัตโนมัติ
@@ -53,6 +59,11 @@ export class Game {
   confirmPressed() {
     const i = this.input;
     return i.pressed('confirm') || i.pressed('tap');
+  }
+
+  skipPressed() {
+    const i = this.input;
+    return i.pressed('skip') || i.pressed('tap');
   }
 
   // ---------------------------------------------------------------- flow
@@ -91,8 +102,14 @@ export class Game {
       highScore: w.score.highScore,
       newHighScore: w.score.newHighScore,
     };
-    this.audio.play('stageClear');
-    this.setState(this.stageIndex + 1 >= STAGES.length ? 'victory' : 'stageClear');
+    if (this.stageIndex + 1 >= STAGES.length) {
+      const p = w.player;
+      this.ending = new Ending(this.summary, p.x, p.y, this.audio);
+      this.setState('ending');
+    } else {
+      this.audio.play('stageClear');
+      this.setState('stageClear');
+    }
   }
 
   gameOver() {
@@ -119,7 +136,7 @@ export class Game {
     switch (this.state) {
       case 'title':
         this.world.time += dt;
-        if (this.confirmPressed()) this.newGame();
+        if (this.stateTime > TITLE_INPUT_LOCK && this.confirmPressed()) this.newGame();
         break;
 
       case 'playing':
@@ -143,18 +160,30 @@ export class Game {
       case 'stageClear':
         this.world.fx.update(dt);
         this.world.time += dt;
-        if (this.stateTime > SCREEN_INPUT_LOCK && this.confirmPressed()) this.startStage(this.stageIndex + 1);
+        if (this.stateTime > SCREEN_INPUT_LOCK && this.skipPressed()) this.startStage(this.stageIndex + 1);
+        break;
+
+      case 'ending':
+        this.ending.update(dt);
+        this.background.speedMul = this.ending.backgroundSpeed();
+        if (this.ending.done || (this.stateTime > ENDING_SKIP_LOCK && this.skipPressed())) {
+          this.background.speedMul = 1;
+          this.ending = null;
+          this.setState('victory');
+        }
         break;
 
       case 'gameOver':
-      case 'victory':
+      case 'victory': {
         this.world.fx.update(dt);
         this.world.time += dt;
-        if (this.stateTime > SCREEN_INPUT_LOCK && this.confirmPressed()) {
+        const lock = this.state === 'victory' ? VICTORY_INPUT_LOCK : SCREEN_INPUT_LOCK;
+        if (this.stateTime > lock && this.skipPressed()) {
           this.audio.play('select');
           this.setState('title');
         }
         break;
+      }
     }
 
     input.endStep();
@@ -221,6 +250,13 @@ export class Game {
       return;
     }
 
+    if (this.state === 'ending') {
+      this.background.drawBack(ctx);
+      this.background.drawFront(ctx);
+      this.ending.draw(ctx, this.stateTime > ENDING_SKIP_LOCK, touch);
+      return;
+    }
+
     this.renderer.drawWorld(this.world, this.background);
     this.hud.draw(ctx, this.world, this.stageIndex + 1, touch && this.state === 'playing');
     this.hud.drawBossBar(ctx, this.world.boss);
@@ -234,7 +270,7 @@ export class Game {
       return;
     }
 
-    const ready = this.stateTime > SCREEN_INPUT_LOCK;
+    const ready = this.stateTime > (this.state === 'victory' ? VICTORY_INPUT_LOCK : SCREEN_INPUT_LOCK);
     switch (this.state) {
       case 'paused':
         Screens.drawPause(ctx, t, touch);
